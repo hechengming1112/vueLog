@@ -10,6 +10,7 @@ import './utils/filter_utils.js'
 
 Vue.use(ElementUI)
 Vue.config.productionTip = false
+window.bus = new Vue();
 
 /* eslint-disable no-new */
 new Vue({
