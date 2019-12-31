@@ -98,13 +98,60 @@
 
     },
     methods :{
+        handleEdit(index, row) {
+                this.$router.push({path: '/editBlog', query: {from: this.activeName,id:row.id}});
+            },
+        handleDelete(index, row) {
+                this.dustbinData.push(row.id);
+                this.deleteToDustBin(row.state);
+        },
+        deleteMany(){
+        var selItems = this.selItems;
+        for (var i = 0; i < selItems.length; i++) {
+          this.dustbinData.push(selItems[i].id)
+        }
+        this.deleteToDustBin(selItems[0].state)
+      },
+        handleSelectionChange(val) {
+            this.selItems = val;
+      },
+        itemClick(row){
+            this.$router.push({path:'/blogDetail',query: {aid: row.id}})
+
+        },
         currentChange(currentPage){
             this.currentPage=currentPage;
             this.loading=true;
             this.loadBlogs(currentPage,this.pageSize);
         },
 
-        
+        handleRestore(index, row) {
+        let _this = this;
+        this.$confirm('将该文件还原到原处，是否继续？','提示',{
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        } ).then(() => {
+          _this.loading = true;
+          putRequest('/article/restore', {articleId: row.id}).then(resp=> {
+            if (resp.status == 200) {
+              var data = resp.data;
+              _this.$message({type: data.status, message: data.msg});
+              if (data.status == 'success') {
+                window.bus.$emit('blogTableReload')//通过选项卡都重新加载数据
+              }
+            } else {
+              _this.$message({type: 'error', message: '还原失败!'});
+            }
+            _this.loading = false;
+          });
+        }).catch(() => {
+          _this.$message({
+            type: 'info',
+            message: '已取消还原'
+          });
+        });
+      },
         loadBlogs(page,count){
             let _this=this;
             let url='';
@@ -135,6 +182,45 @@
                 _this.$message({type:'error',message:'数据加载失败!'})
             })
 
+        },
+        deleteToDustBin(state){
+             var _this = this;
+        this.$confirm(state != 2 ? '将该文件放入回收站，是否继续?' : '永久删除该文件, 是否继续?', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
+          _this.loading = true;
+          var url = '';
+          if (_this.state == -2) {
+            url = "/admin/article/dustbin";
+          } else {
+            url = "/article/dustbin";
+          }
+          putRequest(url, {aids: _this.dustbinData, state: state}).then(resp=> {
+            if (resp.status == 200) {
+              var data = resp.data;
+              _this.$message({type: data.status, message: data.msg});
+              if (data.status == 'success') {
+                window.bus.$emit('blogTableReload')//通过选项卡都重新加载数据
+              }
+            } else {
+              _this.$message({type: 'error', message: '删除失败!'});
+            }
+            _this.loading = false;
+            _this.dustbinData = []
+          }, resp=> {
+            _this.loading = false;
+            _this.$message({type: 'error', message: '删除失败!'});
+            _this.dustbinData = []
+          });
+        }).catch(() => {
+          _this.$message({
+            type: 'info',
+            message: '已取消删除'
+          });
+          _this.dustbinData = []
+        });
         }
 
     },
