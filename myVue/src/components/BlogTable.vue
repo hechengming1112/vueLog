@@ -98,6 +98,9 @@
 
     },
     methods :{
+      searchClick(){
+        this.loadBlogs(1, this.pageSize);
+      },
         handleEdit(index, row) {
                 this.$router.push({path: '/editBlog', query: {from: this.activeName,id:row.id}});
             },
